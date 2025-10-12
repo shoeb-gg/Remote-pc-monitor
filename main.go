@@ -22,30 +22,26 @@ func getEnv(key, defaultValue string) string {
 }
 
 func main() {
-	// Upstash Redis client
-	redisURL := getEnv("UPSTASH_REDIS_REST_URL", "https://moral-pelican-13896.upstash.io")
-	redisToken := getEnv("UPSTASH_REDIS_REST_TOKEN", "")
+	// Upstash Redis credentials
+	redisAddr := getEnv("UPSTASH_REDIS_ADDR", "moral-pelican-13896.upstash.io:6379")
+	redisPassword := getEnv("UPSTASH_REDIS_PASSWORD", "ATZIAAIncDIxMzcxMTEzZjk0NmE0ZTA2YjRhZDUwYzY0MWEwNTQyNHAyMTM4OTY")
 
-	// Parse Upstash URL to get host and port
-	// Format: https://host.upstash.io -> host.upstash.io:6379
-	var redisAddr string
-	if len(redisURL) > 8 {
-		redisAddr = redisURL[8:] + ":6379" // Remove https:// and add port
-	}
-
+	// Create Redis client
 	rdb := redis.NewClient(&redis.Options{
 		Addr:      redisAddr,
-		Password:  redisToken,
+		Password:  redisPassword,
+		Username:  "default",
 		TLSConfig: &tls.Config{},
 	})
 	ctx := context.Background()
 
 	// HTTP client
 	client := &http.Client{Timeout: 5 * time.Second}
+	hardwareMonitorURL := getEnv("HARDWARE_MONITOR_URL", "http://localhost:8085/data.json")
 
 	for {
 		// Make HTTP request
-		resp, err := client.Get("http://172.20.96.1:8085/data.json")
+		resp, err := client.Get(hardwareMonitorURL)
 		if err != nil {
 			log.Printf("HTTP request failed: %v", err)
 			time.Sleep(1 * time.Second)
@@ -78,8 +74,8 @@ func main() {
 		// Add to Redis Stream
 		err = rdb.XAdd(ctx, &redis.XAddArgs{
 			Stream: "hardware:metrics",
-			MaxLen: 1000,  // Keep last 1000 readings
-			Approx: true,  // Use approximate trimming for better performance
+			MaxLen: 1,     // Keep only the latest reading
+			Approx: false, // Exact trimming to ensure only 1 entry
 			Values: map[string]interface{}{
 				"data": string(jsonData),
 			},
@@ -87,9 +83,9 @@ func main() {
 		if err != nil {
 			log.Printf("Redis stream add failed: %v", err)
 		} else {
-			fmt.Printf("Added to stream: %s\n", jsonData)
+			fmt.Printf("Logged successfully to stream ✓ - %s\n", time.Now().Format("2006-01-02 15:04:05"))
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
