@@ -86,6 +86,6 @@ func main() {
 			fmt.Printf("Logged successfully to stream ✓ - %s\n", time.Now().Format("2006-01-02 15:04:05"))
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }

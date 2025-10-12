@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+
 	interface Props {
 		loading: boolean;
 		error: string | null;
@@ -8,6 +10,22 @@
 
 	let { loading, error, lastUpdate, pcName }: Props = $props();
 
+	let currentTime = $state(new Date());
+	let updateTimer: ReturnType<typeof setInterval>;
+
+	onMount(() => {
+		// Update the current time every second to refresh the "ago" display
+		updateTimer = setInterval(() => {
+			currentTime = new Date();
+		}, 1000);
+	});
+
+	onDestroy(() => {
+		if (updateTimer) {
+			clearInterval(updateTimer);
+		}
+	});
+
 	const getStatusColor = () => {
 		if (loading) return 'bg-yellow-400';
 		if (error) return 'bg-red-400';
@@ -15,18 +33,21 @@
 	};
 
 	const getStatusText = () => {
-		if (loading) return 'Loading...';
+		if (loading) return 'Updating...';
 		if (error) return `Error: ${error}`;
 		return pcName ? `Connected to ${pcName}` : 'Connected';
 	};
 
 	const formatLastUpdate = (date: Date | null) => {
 		if (!date) return 'Never';
-		const now = new Date();
-		const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+		// Use currentTime to trigger reactivity
+		const diff = Math.floor((currentTime.getTime() - date.getTime()) / 1000);
 
-		if (diff < 60) return `${diff}s ago`;
-		if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+		// Ensure we never show negative values
+		const seconds = Math.max(0, diff);
+
+		if (seconds < 60) return `${seconds}s ago`;
+		if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
 		return date.toLocaleTimeString();
 	};
 </script>
