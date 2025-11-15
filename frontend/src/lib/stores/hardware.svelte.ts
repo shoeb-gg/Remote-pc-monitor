@@ -1,4 +1,5 @@
-import { fetchLatestMetrics, type HardwareMetrics } from '$lib/api/upstash';
+import { fetchLatestMetrics } from '$lib/api/upstash';
+import type { HardwareMetrics } from '$lib/types/hardware';
 
 class HardwareStore {
 	metrics = $state<HardwareMetrics | null>(null);
@@ -21,7 +22,6 @@ class HardwareStore {
 			}
 		} catch (err) {
 			this.error = err instanceof Error ? err.message : 'Failed to fetch data';
-			console.error('Error refreshing hardware metrics:', err);
 		} finally {
 			this.loading = false;
 		}

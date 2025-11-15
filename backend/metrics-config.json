@@ -1,0 +1,34 @@
+{
+  "metrics": [
+    {
+      "name": "cpu_temp_tctl",
+      "description": "CPU Tctl/Tdie Temperature",
+      "path": ["AMD Ryzen|Ryzen", "Temperatures", "Core|Tctl"],
+      "unit": "°C"
+    },
+    {
+      "name": "cpu_temp_ccd1",
+      "description": "CPU CCD1 Temperature",
+      "path": ["AMD Ryzen|Ryzen", "Temperatures", "CCD1 (Tdie)"],
+      "unit": "°C"
+    },
+    {
+      "name": "cpu_power",
+      "description": "CPU Package Power",
+      "path": ["AMD Ryzen|Ryzen", "Powers", "Package"],
+      "unit": "W"
+    },
+    {
+      "name": "gpu_temp",
+      "description": "GPU Core Temperature",
+      "path": ["NVIDIA|GeForce", "Temperatures", "GPU Core"],
+      "unit": "°C"
+    },
+    {
+      "name": "gpu_power",
+      "description": "GPU Package Power",
+      "path": ["NVIDIA|GeForce", "Powers", "GPU Package"],
+      "unit": "W"
+    }
+  ]
+}
