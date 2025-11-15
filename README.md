@@ -24,9 +24,11 @@ Monitor your PC's vital stats from anywhere! Track CPU/GPU temperatures and powe
 ### 🎨 **Beautiful UI**
 - 🌙 Dark theme with gradient borders
 - 📱 Responsive design (mobile-friendly)
+- 📲 **Progressive Web App (PWA)** - installable on desktop & mobile
 - 🎯 Color-coded status indicators
 - ⚙️ Customizable temperature/power ranges
 - ⏱️ Live countdown timers
+- 🔌 Offline support with service worker
 
 ### 🔧 **Powerful Configuration**
 - 📝 JSON-based metric configuration
@@ -299,7 +301,9 @@ Cards are color-coded by type:
 - 🎨 **SvelteKit** - Full-stack framework with static adapter
 - 🎯 **TypeScript** - Full type safety
 - 💅 **Tailwind CSS** - Utility-first styling
-- 🌐 **PWA Ready** - Works offline, installable
+- 📲 **Progressive Web App (PWA)** - Installable, offline-capable
+- 🔧 **Service Worker** - Network-first caching strategy
+- 🎨 **Sharp** - Icon generation from SVG
 
 ---
 
@@ -317,7 +321,8 @@ Cards are color-coded by type:
 ├── 📂 frontend/
 │   ├── 📂 src/
 │   │   ├── 📂 routes/
-│   │   │   └── 🏠 +page.svelte     # Main dashboard
+│   │   │   ├── 🏠 +page.svelte     # Main dashboard
+│   │   │   └── +layout.svelte      # Service worker registration
 │   │   ├── 📂 lib/
 │   │   │   ├── 📂 api/
 │   │   │   │   └── upstash.ts      # API client
@@ -326,7 +331,15 @@ Cards are color-coded by type:
 │   │   │   ├── 📂 components/      # Reusable UI components
 │   │   │   └── 📂 types/
 │   │   │       └── hardware.ts     # TypeScript interfaces
-│   │   └── app.html
+│   │   └── app.html                # PWA metadata
+│   ├── 📂 static/
+│   │   ├── 🔧 service-worker.js    # PWA service worker
+│   │   ├── 📋 manifest.json        # PWA manifest
+│   │   ├── 🎨 icon.svg             # Base icon source
+│   │   ├── 🖼️ icon-192.png         # PWA icon 192x192
+│   │   ├── 🖼️ icon-512.png         # PWA icon 512x512
+│   │   └── 🖼️ favicon.png          # Browser favicon
+│   ├── 📝 generate-icons.js        # Icon generation script
 │   ├── 📦 package.json
 │   ├── ⚙️ svelte.config.js
 │   └── 🎨 tailwind.config.js
@@ -341,15 +354,16 @@ Cards are color-coded by type:
 
 ## 🎯 Roadmap
 
+- [x] 📲 **Progressive Web App (PWA)** - Installable, works offline
 - [ ] 📊 Historical data graphs
 - [ ] 🔔 Alert thresholds with notifications
 - [ ] 🖥️ Multiple PC monitoring
-- [ ] 📱 Enhanced PWA features
 - [ ] 🌓 Dark/light theme toggle
 - [ ] 📤 Export data to CSV
 - [ ] 🧠 RAM usage monitoring
 - [ ] 💾 Disk activity tracking
 - [ ] 🌐 Network traffic monitoring
+- [ ] 🔔 Push notifications for critical temperatures
 
 ---
 

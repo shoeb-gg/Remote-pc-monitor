@@ -142,9 +142,12 @@ go build -o hardware-monitor.exe main.go
 
 - **Svelte 5**: Using new runes API (`$state`, `$props`, `$effect`)
 - **SvelteKit**: Static adapter for PWA deployment
+- **Progressive Web App (PWA)**: Installable, offline-capable
+- **Service Worker**: Network-first caching strategy
 - **Tailwind CSS**: Utility-first styling
 - **TypeScript**: Full type safety (no `any` types)
 - **Upstash REST API**: Direct fetch to Redis via HTTP
+- **Sharp**: SVG to PNG icon generation
 
 ### Project Structure
 
@@ -153,7 +156,7 @@ frontend/
 ├── src/
 │   ├── routes/
 │   │   ├── +page.svelte         # Main dashboard page
-│   │   └── +layout.svelte       # Root layout
+│   │   └── +layout.svelte       # Root layout + SW registration
 │   ├── lib/
 │   │   ├── api/
 │   │   │   └── upstash.ts       # Redis API client (GET endpoint)
@@ -167,8 +170,15 @@ frontend/
 │   │   │   └── RefreshSettingsModal.svelte
 │   │   └── types/
 │   │       └── hardware.ts      # TypeScript interfaces
-│   └── app.html
+│   └── app.html                 # PWA metadata
 ├── static/
+│   ├── service-worker.js        # PWA service worker
+│   ├── manifest.json            # PWA manifest
+│   ├── icon.svg                 # Base icon (CPU design)
+│   ├── icon-192.png             # PWA icon 192x192
+│   ├── icon-512.png             # PWA icon 512x512
+│   └── favicon.png              # Browser favicon 32x32
+├── generate-icons.js            # Sharp script for icon generation
 ├── svelte.config.js
 ├── tailwind.config.js
 ├── package.json
@@ -214,6 +224,14 @@ frontend/
 - Button with spinning animation
 - Restarts auto-refresh cycle
 - Prevents spam with loading state
+
+#### 6. Progressive Web App (PWA)
+- **Installable**: Can be installed on desktop and mobile devices
+- **Offline Support**: Service worker caches assets for offline access
+- **Network-First Strategy**: Always tries network first, falls back to cache
+- **Manifest**: Full PWA manifest with app metadata and icons
+- **Icons**: Custom CPU-themed icons (192x192, 512x512, favicon)
+- **Service Worker**: Auto-registers on app load via `+layout.svelte`
 
 ### TypeScript Interfaces
 
@@ -283,6 +301,9 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Generate PWA icons from SVG (if icon.svg is modified)
+npm run generate-icons
 ```
 
 ### Environment Variables
@@ -310,6 +331,8 @@ PUBLIC_UPSTASH_REDIS_TOKEN=your_rest_api_token
 - ✅ **setTimeout vs setInterval**: Waits for response before next refresh
 - ✅ **Type safety**: All TypeScript, no `any` types
 - ✅ **localStorage caching**: Persistent user preferences
+- ✅ **PWA optimizations**: Service worker caching, offline support
+- ✅ **Static adapter**: Pre-rendered SPA for maximum performance
 
 ### Redis Cost Optimization
 - **Backend**: Simple `SET` (no streams overhead)
@@ -438,6 +461,87 @@ npm run build
 
 ---
 
+## Progressive Web App (PWA) Setup
+
+### Overview
+
+The frontend is a fully functional PWA that can be installed on desktop and mobile devices, with offline support via service worker.
+
+### PWA Components
+
+**1. Web App Manifest** (`static/manifest.json`)
+```json
+{
+  "name": "PC Hardware Monitor",
+  "short_name": "PC Monitor",
+  "display": "standalone",
+  "theme_color": "#111827",
+  "icons": [...]
+}
+```
+
+**2. Service Worker** (`static/service-worker.js`)
+- **Strategy**: Network-first with cache fallback
+- **Cache Name**: `pc-monitor-v1`
+- **Cached Assets**: Root page, manifest
+- **Behavior**:
+  - Tries network first for fresh data
+  - Falls back to cache if network fails
+  - Skips cross-origin requests (CORS-safe)
+  - Auto-updates cache with successful responses
+
+**3. Service Worker Registration** (`src/routes/+layout.svelte`)
+```typescript
+onMount(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js');
+  }
+});
+```
+
+**4. App Icons**
+- `icon.svg` - Base SVG design (blue CPU chip with red temperature indicator)
+- `icon-192.png` - 192x192 PNG for PWA
+- `icon-512.png` - 512x512 PNG for PWA
+- `favicon.png` - 32x32 PNG for browser tab
+
+**5. PWA Metadata** (`src/app.html`)
+- Manifest link
+- Theme color meta tag
+- Apple touch icon
+- Favicon link
+
+### Generating Custom Icons
+
+If you want to customize the app icon:
+
+1. Edit `frontend/static/icon.svg` with your design
+2. Run icon generation script:
+```bash
+cd frontend
+npm run generate-icons
+```
+3. This creates all required PNG sizes using Sharp
+
+### Testing PWA Functionality
+
+**Chrome/Edge DevTools:**
+1. Open DevTools → Application tab
+2. Check Manifest section (should show app info)
+3. Check Service Workers (should show registered worker)
+4. Install button should appear in address bar
+
+**Installation:**
+- Desktop: Click install button in browser
+- Mobile: Add to Home Screen from browser menu
+
+**Offline Testing:**
+1. Load the app once while online
+2. Open DevTools → Network → Enable "Offline"
+3. Refresh page - should still load from cache
+
+---
+
 ## Security Notes
 
 - ✅ **No hardcoded credentials**: All in `.env` files
@@ -466,11 +570,12 @@ npm run build
 
 ## Future Enhancement Ideas
 
+- [x] **Progressive Web App** - Fully implemented!
 - [ ] Add more metrics (RAM, disk, network)
 - [ ] Historical data graphs
 - [ ] Alert thresholds with notifications
 - [ ] Multiple PC monitoring
-- [ ] Mobile app (PWA ready!)
+- [ ] Push notifications for critical temperatures
 - [ ] Dark/light theme toggle
 - [ ] Export data to CSV
 

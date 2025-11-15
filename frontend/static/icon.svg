@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#111827" rx="64"/>
+
+  <!-- CPU Icon -->
+  <rect x="156" y="156" width="200" height="200" fill="#3b82f6" rx="16"/>
+  <rect x="176" y="176" width="160" height="160" fill="#1e293b" rx="8"/>
+
+  <!-- Temperature indicator -->
+  <circle cx="256" cy="256" r="40" fill="#ef4444"/>
+
+  <!-- Decorative elements (pins) -->
+  <rect x="120" y="200" width="20" height="8" fill="#6b7280"/>
+  <rect x="120" y="240" width="20" height="8" fill="#6b7280"/>
+  <rect x="120" y="280" width="20" height="8" fill="#6b7280"/>
+  <rect x="120" y="320" width="20" height="8" fill="#6b7280"/>
+
+  <rect x="372" y="200" width="20" height="8" fill="#6b7280"/>
+  <rect x="372" y="240" width="20" height="8" fill="#6b7280"/>
+  <rect x="372" y="280" width="20" height="8" fill="#6b7280"/>
+  <rect x="372" y="320" width="20" height="8" fill="#6b7280"/>
+
+  <rect x="200" y="120" width="8" height="20" fill="#6b7280"/>
+  <rect x="240" y="120" width="8" height="20" fill="#6b7280"/>
+  <rect x="280" y="120" width="8" height="20" fill="#6b7280"/>
+  <rect x="320" y="120" width="8" height="20" fill="#6b7280"/>
+
+  <rect x="200" y="372" width="8" height="20" fill="#6b7280"/>
+  <rect x="240" y="372" width="8" height="20" fill="#6b7280"/>
+  <rect x="280" y="372" width="8" height="20" fill="#6b7280"/>
+  <rect x="320" y="372" width="8" height="20" fill="#6b7280"/>
+</svg>
