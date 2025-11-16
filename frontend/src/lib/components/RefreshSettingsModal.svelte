@@ -9,13 +9,21 @@
 	let { isOpen, currentInterval, onClose, onSave }: Props = $props();
 
 	let intervalValue = $state(currentInterval);
+	let isDisabled = $state(currentInterval === 0);
 
 	// Update local state when props change
 	$effect(() => {
 		intervalValue = currentInterval;
+		isDisabled = currentInterval === 0;
 	});
 
 	const handleSave = () => {
+		if (isDisabled) {
+			onSave(0); // 0 means disabled
+			onClose();
+			return;
+		}
+
 		// Validate interval is at least 1 second
 		if (intervalValue < 1) {
 			alert('Refresh interval must be at least 1 second');
@@ -63,40 +71,57 @@
 
 			<div class="space-y-4">
 				<div>
-					<label for="interval-value" class="block text-sm font-medium text-white/80 mb-2">
-						Refresh Interval (seconds)
+					<label class="flex items-center space-x-3 cursor-pointer mb-4">
+						<input
+							type="checkbox"
+							bind:checked={isDisabled}
+							class="w-5 h-5 rounded border-gray-700 bg-gray-900 text-red-600 focus:ring-2 focus:ring-red-500"
+						/>
+						<span class="text-sm font-medium text-white/80">Disable auto-refresh</span>
 					</label>
-					<input
-						id="interval-value"
-						type="number"
-						min="1"
-						bind:value={intervalValue}
-						onkeydown={handleKeyDown}
-						class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					/>
 				</div>
 
-				<div>
-					<p class="text-sm font-medium text-white/80 mb-2">Quick Presets</p>
-					<div class="flex flex-wrap gap-2">
-						{#each presets as preset}
-							<button
-								onclick={() => setPreset(preset.value)}
-								class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 {intervalValue === preset.value ? 'ring-2 ring-blue-500' : ''}"
-							>
-								{preset.label}
-							</button>
-						{/each}
+				{#if !isDisabled}
+					<div>
+						<label for="interval-value" class="block text-sm font-medium text-white/80 mb-2">
+							Refresh Interval (seconds)
+						</label>
+						<input
+							id="interval-value"
+							type="number"
+							min="1"
+							bind:value={intervalValue}
+							onkeydown={handleKeyDown}
+							class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						/>
 					</div>
-				</div>
 
-				<div class="text-sm text-white/60 bg-gray-900 rounded-lg p-3">
-					Data will refresh every {intervalValue} second{intervalValue !== 1 ? 's' : ''}
-				</div>
+					<div>
+						<p class="text-sm font-medium text-white/80 mb-2">Quick Presets</p>
+						<div class="flex flex-wrap gap-2">
+							{#each presets as preset}
+								<button
+									onclick={() => setPreset(preset.value)}
+									class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 {intervalValue === preset.value ? 'ring-2 ring-blue-500' : ''}"
+								>
+									{preset.label}
+								</button>
+							{/each}
+						</div>
+					</div>
 
-				<div class="text-xs text-yellow-400/80 bg-yellow-900/20 rounded-lg p-3 border border-yellow-700/30">
-					<strong>Note:</strong> Shorter intervals use more API calls. Keep it at 30s or higher to stay within free tier limits.
-				</div>
+					<div class="text-sm text-white/60 bg-gray-900 rounded-lg p-3">
+						Data will refresh every {intervalValue} second{intervalValue !== 1 ? 's' : ''}
+					</div>
+
+					<div class="text-xs text-yellow-400/80 bg-yellow-900/20 rounded-lg p-3 border border-yellow-700/30">
+						<strong>Note:</strong> Shorter intervals use more API calls. Keep it at 30s or higher to stay within free tier limits.
+					</div>
+				{:else}
+					<div class="text-sm text-red-400/80 bg-red-900/20 rounded-lg p-3 border border-red-700/30">
+						<strong>Warning:</strong> Auto-refresh is disabled. You'll need to manually refresh to see updated data.
+					</div>
+				{/if}
 			</div>
 
 			<div class="flex space-x-3 mt-6">

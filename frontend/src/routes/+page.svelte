@@ -33,8 +33,8 @@
 		// Fetch data
 		await hardwareStore.refresh();
 
-		// Schedule next refresh only if auto-refresh is still active
-		if (isAutoRefreshActive) {
+		// Schedule next refresh only if auto-refresh is still active and interval > 0
+		if (isAutoRefreshActive && refreshIntervalSeconds > 0) {
 			refreshTimeout = setTimeout(refreshAndScheduleNext, refreshIntervalSeconds * 1000);
 		}
 	};
@@ -44,8 +44,10 @@
 		if (refreshTimeout) {
 			clearTimeout(refreshTimeout);
 		}
-		// Start new cycle
-		refreshAndScheduleNext();
+		// Start new cycle only if interval > 0
+		if (refreshIntervalSeconds > 0) {
+			refreshAndScheduleNext();
+		}
 	};
 
 	const openRefreshSettings = () => {
