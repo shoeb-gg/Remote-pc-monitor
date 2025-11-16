@@ -16,7 +16,8 @@ class HardwareStore {
 
 			if (data) {
 				this.metrics = data;
-				this.lastUpdate = new Date();
+				// Use backend's timestamp (convert Unix timestamp to Date)
+				this.lastUpdate = new Date(data.timestamp * 1000);
 			} else {
 				this.error = 'No data available';
 			}
