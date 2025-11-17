@@ -1,0 +1,3 @@
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run """" & CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\start-backend.bat""", 0, False
+Set WshShell = Nothing

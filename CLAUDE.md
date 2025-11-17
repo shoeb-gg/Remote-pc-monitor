@@ -581,24 +581,94 @@ npm run generate-icons
 
 ---
 
+## Backend Management Scripts (Windows)
+
+### Available Scripts
+
+**Start Scripts:**
+- **`start-backend-hidden.vbs`** - Silent background execution (recommended for daily use)
+- **`start-backend.bat`** - Visible terminal window (for debugging/logs)
+- **`run.ps1`** - PowerShell alternative
+
+**Management Scripts:**
+- **`manage-backend.bat`** - Interactive menu with:
+  1. Check Status - See if backend is running
+  2. Start Backend - Launch in hidden mode
+  3. Stop Backend - Kill the process
+  4. View Logs - (placeholder for future)
+  5. Exit
+
+- **`stop-backend.bat`** - Quick stop script
+- **`build-backend.bat`** - Rebuild `pcmon.exe` after code changes
+
+### How They Work
+
+**Build Process:**
+- First run auto-builds `backend/pcmon.exe` from `main.go`
+- Subsequent runs use the compiled executable
+- Much faster startup than `go run`
+- Fixed process name for easy task management
+
+**Process Detection:**
+- All scripts look for `pcmon.exe` in Task Manager
+- Use `tasklist | findstr "pcmon.exe"` to check status
+- Use `taskkill /F /IM pcmon.exe` to stop
+
+**Auto-start on Windows:**
+1. Press `Win + R`, type `shell:startup`, press Enter
+2. Create shortcut to `start-backend-hidden.vbs`
+3. Backend runs silently on every login
+
+**Task Scheduler (Advanced):**
+For system-level startup (before login):
+1. Open Task Scheduler (`taskschd.msc`)
+2. Create Task with:
+   - Trigger: At startup
+   - Action: Start `start-backend-hidden.vbs`
+   - Check "Run with highest privileges"
+
+### Troubleshooting Scripts
+
+If scripts report "not running" but frontend shows data:
+- You may have started with `go run` directly
+- Look for `go.exe` or temporary exe in Task Manager
+- Stop all Go processes and restart with provided scripts
+
+---
+
 ## Quick Reference
 
-**Start Everything:**
+**Start Everything (Windows):**
 ```bash
-# Terminal 1 - Backend
-.\run.ps1
+# Backend (silent, no window)
+.\start-backend-hidden.vbs
 
-# Terminal 2 - Frontend
+# OR use management tool
+.\manage-backend.bat
+
+# Frontend
+cd frontend && npm run dev
+```
+
+**Start Everything (Cross-platform):**
+```bash
+# Backend
+.\run.ps1  # Windows PowerShell
+# or: cd backend && go run main.go
+
+# Frontend
 cd frontend && npm run dev
 ```
 
 **Update Metrics:**
 1. Edit `backend/metrics-config.json`
-2. Restart backend
-3. Done! Frontend auto-updates
+2. If using compiled exe: run `build-backend.bat`
+3. Restart backend
+4. Done! Frontend auto-updates
 
 **Troubleshoot:**
-- Backend logs: Console output
+- Backend logs: Console output (use `start-backend.bat` to see logs)
 - Frontend logs: Browser DevTools
 - Redis data: Upstash dashboard
 - Hardware data: http://localhost:8085/data.json
+- Process status: `manage-backend.bat` → Check Status

@@ -129,19 +129,44 @@ npm install
 
 ### 5️⃣ Run Everything!
 
-**Terminal 1 - Backend:**
+**Option A: Quick Start (Windows)**
+```bash
+# Start backend (hidden, no terminal window)
+.\start-backend-hidden.vbs
+
+# Start frontend
+cd frontend
+npm run dev
+```
+
+**Option B: PowerShell Script**
 ```bash
 # From project root
 .\run.ps1
 ```
 
-**Terminal 2 - Frontend:**
+**Option C: Management Tool**
 ```bash
-cd frontend
-npm run dev
+# Interactive menu for start/stop/status
+.\manage-backend.bat
 ```
 
 **Open Browser:** 🌐 http://localhost:5173
+
+### 🔧 Backend Management (Windows)
+
+- **`start-backend-hidden.vbs`** - Start backend silently (no window)
+- **`start-backend.bat`** - Start with visible terminal (debugging)
+- **`stop-backend.bat`** - Stop the running backend
+- **`manage-backend.bat`** - Interactive menu for all operations
+- **`build-backend.bat`** - Rebuild executable after code changes
+
+**Auto-start on Windows boot:**
+1. Press `Win + R`, type `shell:startup`, press Enter
+2. Create shortcut to `start-backend-hidden.vbs`
+3. Backend will start silently on login
+
+**Find in Task Manager:** Look for `pcmon.exe` in Details tab
 
 ---
 
