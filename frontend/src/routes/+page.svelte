@@ -109,7 +109,7 @@
 		<!-- Temperature Cards -->
 		<div class="mb-6">
 			<h2 class="text-xl font-semibold text-white mb-4">Temperature</h2>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<TemperatureCard
 					title="CPU Temperature (Tctl)"
 					temperature={hardwareStore.metrics?.cpu_temp_tctl}
@@ -129,6 +129,14 @@
 				<TemperatureCard
 					title="GPU Temperature"
 					temperature={hardwareStore.metrics?.gpu_temp}
+					type="gpu"
+					loading={hardwareStore.loading}
+					error={!!hardwareStore.error}
+				/>
+
+				<TemperatureCard
+					title="GPU Memory Temperature"
+					temperature={hardwareStore.metrics?.gpu_memory_temp}
 					type="gpu"
 					loading={hardwareStore.loading}
 					error={!!hardwareStore.error}

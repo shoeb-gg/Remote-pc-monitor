@@ -73,7 +73,7 @@
 
 <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br {gradientClass} p-1">
 	<div class="rounded-xl bg-gray-900 p-6 backdrop-blur-sm">
-		<div class="flex items-center justify-between mb-4">
+		<div class="flex items-start justify-between mb-4 min-h-[5.5rem]">
 			<h2 class="text-lg font-semibold text-white">{title}</h2>
 			<div class="flex items-center space-x-2">
 				<button

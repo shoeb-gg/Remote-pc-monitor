@@ -29,6 +29,12 @@
       "description": "GPU Package Power",
       "path": ["NVIDIA|GeForce", "Powers", "GPU Package"],
       "unit": "W"
+    },
+    {
+      "name": "gpu_memory_temp",
+      "description": "GPU Memory Junction Temperature",
+      "path": ["NVIDIA|GeForce", "Temperatures", "GPU Memory Junction|Memory Junction"],
+      "unit": "°C"
     }
   ]
 }
