@@ -27,3 +27,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Frontend build artifacts
+frontend/build/
+frontend/.svelte-kit/
+frontend/node_modules/

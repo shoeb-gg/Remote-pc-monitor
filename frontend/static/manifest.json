@@ -4,7 +4,7 @@
 	"description": "Real-time PC hardware monitoring dashboard",
 	"start_url": "/",
 	"display": "standalone",
-	"orientation": "any",
+	"orientation": "portrait",
 	"background_color": "#111827",
 	"theme_color": "#111827",
 	"categories": ["utilities", "productivity"],
