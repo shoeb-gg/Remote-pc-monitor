@@ -12,16 +12,18 @@ echo 1. Check Status
 echo 2. Start Backend (Hidden)
 echo 3. Stop Backend
 echo 4. View Logs (if running)
-echo 5. Exit
+echo 5. Restart Backend
+echo 6. Exit
 echo.
 echo ========================================
-set /p choice="Enter your choice (1-5): "
+set /p choice="Enter your choice (1-6): "
 
 if "%choice%"=="1" goto status
 if "%choice%"=="2" goto start
 if "%choice%"=="3" goto stop
 if "%choice%"=="4" goto logs
-if "%choice%"=="5" goto end
+if "%choice%"=="5" goto restart
+if "%choice%"=="6" goto end
 goto menu
 
 :status
@@ -67,11 +69,28 @@ goto menu
 
 :logs
 cls
-echo This would show logs if implemented.
-echo Currently, go.exe runs without console output.
+echo Last 50 lines of backend log:
+echo ========================================
 echo.
-echo Consider building with logging to file:
-echo go build -o hardware-monitor.exe main.go
+if exist "%~dp0backend\pcmon.log" (
+    powershell -Command "Get-Content '%~dp0backend\pcmon.log' -Tail 50"
+) else (
+    echo No log file found. Start the backend first.
+)
+echo.
+pause
+goto menu
+
+:restart
+cls
+echo Stopping backend...
+taskkill /F /IM pcmon.exe 2>nul
+timeout /t 1 >nul
+echo Starting backend in hidden mode...
+start "" "%~dp0start-backend-hidden.vbs"
+timeout /t 2 >nul
+echo.
+echo Done! Use option 1 to check status.
 echo.
 pause
 goto menu
