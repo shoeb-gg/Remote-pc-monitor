@@ -64,6 +64,8 @@ This is a **real-time PC hardware monitoring system** that tracks CPU and GPU te
    - `cpu_power`: CPU package power consumption
    - `gpu_temp`: GPU core temperature
    - `gpu_power`: GPU package power consumption
+   - `gpu_memory_temp`: GPU memory junction temperature
+   - If a metric's path doesn't resolve (renamed/missing sensor) or its value can't be parsed, that field is emitted as JSON `null` and a `WARNING` is logged — never a fake `0`
 5. **Redis Storage**: Stores simplified JSON in Upstash Redis using `SET` command (no expiry)
 6. **Retry Logic**: 5 retry attempts over ~60 seconds on failures
 7. **Loop**: Repeats every 10 seconds
@@ -99,10 +101,15 @@ Backend sends this simplified JSON to Redis:
   "cpu_power": 59.1,
   "gpu_temp": 53.0,
   "gpu_power": 173.8,
+  "gpu_memory_temp": 68.2,
   "pc_name": "SHOEBRIG",
   "timestamp": 1731664320
 }
 ```
+
+Any metric field may be `null` instead of a number — that means the backend
+could not resolve that sensor (see `WARNING` lines in the backend log), as
+opposed to the entire payload being missing (PC offline / backend down).
 
 ### Dependencies
 
@@ -238,11 +245,14 @@ frontend/
 ```typescript
 // hardware.ts
 export interface HardwareMetrics {
-  cpu_temp_tctl: number;
-  cpu_temp_ccd1: number;
-  cpu_power: number;
-  gpu_temp: number;
-  gpu_power: number;
+  // A metric is `null` when the backend couldn't resolve that sensor,
+  // vs `undefined` when the whole payload is absent (PC offline).
+  cpu_temp_tctl: number | null;
+  cpu_temp_ccd1: number | null;
+  cpu_power: number | null;
+  gpu_temp: number | null;
+  gpu_memory_temp: number | null;
+  gpu_power: number | null;
   pc_name: string;
   timestamp: number;
 }
@@ -376,7 +386,7 @@ Children[0] (Computer) →
 // frontend/src/lib/types/hardware.ts
 export interface HardwareMetrics {
   // ... existing fields
-  new_metric_name: number;
+  new_metric_name: number | null; // null when the sensor isn't found
 }
 ```
 
@@ -406,11 +416,11 @@ The backend will automatically load the new config and start extracting the metr
 - **Verify credentials** are set correctly
 - **Test hardware monitor**: Visit `http://localhost:8085/data.json` in browser
 
-### Frontend shows 0.0 for a metric
-- **Check metric path** in `metrics-config.json`
-- **Verify exact text match** (case-sensitive, include spaces)
-- **Look at backend logs** for extraction errors
-- **Use pattern alternatives** with `|` separator
+### Frontend card shows "N/A" / "Sensor not found"
+- This means the backend resolved the payload but **that specific metric** didn't match — it is emitted as `null`, not `0`
+- **Check backend logs** for a `WARNING: metric "..." not found (path [...])` line naming the failing path step
+- **Check metric path** in `metrics-config.json` for an exact text match (case-sensitive, include spaces)
+- **Use pattern alternatives** with `|` separator (e.g. after a LibreHardwareMonitor update renames a sensor)
 
 ### Stale data warning
 - **Check backend is running** and uploading
@@ -438,6 +448,7 @@ The backend will automatically load the new config and start extracting the metr
 ```bash
 # Backend
 cd backend
+go test ./...   # Unit tests (parseFloat, extractMetricByPath, findNodeByPattern)
 go run main.go  # Watch console output for errors
 
 # Frontend
@@ -547,7 +558,7 @@ npm run generate-icons
 - ✅ **No hardcoded credentials**: All in `.env` files
 - ✅ **Environment validation**: Backend fails fast if vars missing
 - ✅ **TLS for Redis**: Encrypted connection to Upstash
-- ✅ **No secrets in frontend**: Only public REST API tokens
+- ⚠️ **Frontend token must be read-only**: `PUBLIC_UPSTASH_REDIS_TOKEN` is compiled into the static JS bundle and is readable by anyone who visits the deployed site. Upstash's default REST token is full read-write, so generate a **read-only** token in the Upstash console and use that for the frontend — never the same token the backend uses for `UPSTASH_REDIS_PASSWORD`. Rotate immediately if a read-write token was ever deployed.
 - ⚠️ **Local hardware monitor**: Not exposed to internet (localhost only)
 
 ---

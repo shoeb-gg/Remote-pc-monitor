@@ -112,8 +112,14 @@ cp .env.example .env
 **`.env` file:**
 ```bash
 PUBLIC_UPSTASH_REDIS_URL=https://your-instance.upstash.io
-PUBLIC_UPSTASH_REDIS_TOKEN=your_rest_api_token
+PUBLIC_UPSTASH_REDIS_TOKEN=your_readonly_rest_api_token
 ```
+
+> ⚠️ **Use the read-only REST token here, not the read-write one.** This value
+> is compiled into the static JS bundle and is visible to anyone who loads the
+> deployed site. Generate a read-only token in the Upstash console (separate
+> from `UPSTASH_REDIS_PASSWORD`, which stays backend-only) so a visitor can
+> never overwrite or wipe your Redis data.
 
 ### 4️⃣ Install Dependencies
 
@@ -220,7 +226,7 @@ Edit `frontend/src/lib/types/hardware.ts`:
 ```typescript
 export interface HardwareMetrics {
   // ... existing fields
-  cpu_voltage: number;
+  cpu_voltage: number | null; // null when the sensor isn't found
 }
 ```
 
@@ -290,11 +296,13 @@ Cards are color-coded by type:
 
 **Test:** Visit http://localhost:8085/data.json in your browser
 
-### ❌ Frontend shows 0.0
+### ❌ Card shows "N/A" / "Sensor not found"
+
+The backend couldn't resolve that metric and emitted `null` (not a fake `0.0`).
 
 **Check:**
+- ✅ Backend console/log for a `WARNING: metric "..." not found` line
 - ✅ Metric path in `metrics-config.json` matches exactly
-- ✅ Backend console for extraction errors
 - ✅ Use `|` separator for alternative names
 
 ### ⚠️ Stale Data Warning
@@ -338,6 +346,7 @@ Cards are color-coded by type:
 📦 PC-Hardware-Monitor/
 ├── 📂 backend/
 │   ├── 🔧 main.go                  # Go backend application
+│   ├── ✅ main_test.go             # Unit tests
 │   ├── ⚙️ metrics-config.json      # Metric extraction config
 │   ├── 🔐 .env                     # Environment variables
 │   ├── 📝 go.mod                   # Go dependencies
