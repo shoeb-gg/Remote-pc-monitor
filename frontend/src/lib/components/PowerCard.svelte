@@ -4,13 +4,17 @@
 
 	interface Props {
 		title: string;
-		power: number | undefined;
+		power: number | null | undefined;
 		type: 'cpu' | 'gpu';
 		loading?: boolean;
 		error?: boolean;
 	}
 
 	let { title, power, type, loading = false, error = false }: Props = $props();
+
+	// null = backend couldn't find this sensor; undefined = no data at all.
+	const hasReading = $derived(typeof power === 'number');
+	const sensorMissing = $derived(power === null);
 
 	const gradientClass = type === 'cpu'
 		? 'from-purple-500 to-pink-600'
@@ -35,8 +39,8 @@
 		}
 	});
 
-	const getPowerColor = (watts: number | undefined) => {
-		if (!watts) return 'text-gray-400';
+	const getPowerColor = (watts: number | null | undefined) => {
+		if (typeof watts !== 'number') return 'text-gray-400';
 		if (watts < 50) return 'text-green-400';
 		if (watts < 100) return 'text-yellow-400';
 		if (watts < 150) return 'text-orange-400';
@@ -45,7 +49,7 @@
 
 	const getStatusDotColor = () => {
 		if (loading) return 'bg-yellow-400';
-		if (error || power === undefined) return 'bg-red-400';
+		if (error || power === undefined || sensorMissing) return 'bg-red-400';
 		return 'bg-green-400';
 	};
 
@@ -64,7 +68,7 @@
 	};
 
 	const getProgressPercentage = () => {
-		if (power === undefined) return 0;
+		if (typeof power !== 'number') return 0;
 		const range = maxPower - minPower;
 		const value = power - minPower;
 		return Math.min(Math.max((value / range) * 100, 0), 100);
@@ -89,20 +93,27 @@
 			</div>
 		</div>
 
-		<div class="flex items-baseline space-x-2">
-			<span class="text-5xl font-bold {getPowerColor(power)} transition-colors duration-300">
-				{power !== undefined ? power.toFixed(1) : '--'}
-			</span>
-			<span class="text-2xl text-white/60">W</span>
-		</div>
-
-		{#if power !== undefined}
-			<div class="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
-				<div
-					class="h-full bg-gradient-to-r from-white/50 to-white/80 transition-all duration-500 ease-out"
-					style="width: {getProgressPercentage()}%"
-				></div>
+		{#if sensorMissing}
+			<div class="flex items-baseline space-x-2">
+				<span class="text-4xl font-bold text-gray-400">N/A</span>
 			</div>
+			<p class="mt-2 text-sm text-red-400/90">Sensor not found</p>
+		{:else}
+			<div class="flex items-baseline space-x-2">
+				<span class="text-5xl font-bold {getPowerColor(power)} transition-colors duration-300">
+					{hasReading ? (power as number).toFixed(1) : '--'}
+				</span>
+				<span class="text-2xl text-white/60">W</span>
+			</div>
+
+			{#if hasReading}
+				<div class="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+					<div
+						class="h-full bg-gradient-to-r from-white/50 to-white/80 transition-all duration-500 ease-out"
+						style="width: {getProgressPercentage()}%"
+					></div>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>

@@ -63,14 +63,18 @@ func loadConfig(filename string) (*Config, error) {
 	return &config, nil
 }
 
-// parseFloat extracts float from value like "72.3 °C" or "65.7 W"
-func parseFloat(value string, unit string) float64 {
+// parseFloat extracts a float from a value like "72.3 °C" or "65.7 W".
+// The bool is false when the value is non-numeric (e.g. "N/A", "-", ""),
+// so callers can distinguish a real 0 from a failed parse.
+func parseFloat(value string, unit string) (float64, bool) {
 	cleaned := strings.TrimSpace(value)
 	cleaned = strings.Replace(cleaned, " "+unit, "", 1)
 
 	var result float64
-	fmt.Sscanf(cleaned, "%f", &result)
-	return result
+	if n, err := fmt.Sscanf(cleaned, "%f", &result); err != nil || n != 1 {
+		return 0, false
+	}
+	return result, true
 }
 
 // findNodeByPattern searches for a node matching any of the patterns (separated by |)
@@ -86,10 +90,12 @@ func findNodeByPattern(nodes []HardwareNode, pattern string) *HardwareNode {
 	return nil
 }
 
-// extractMetricByPath extracts a single metric following the path
-func extractMetricByPath(computer HardwareNode, path []string, unit string) float64 {
+// extractMetricByPath extracts a single metric following the path.
+// The bool is false when any path step doesn't match or the value can't be
+// parsed, so a missing sensor is never silently reported as 0.
+func extractMetricByPath(computer HardwareNode, path []string, unit string) (float64, bool) {
 	if len(path) == 0 {
-		return 0
+		return 0, false
 	}
 
 	// Start from computer's children
@@ -99,7 +105,7 @@ func extractMetricByPath(computer HardwareNode, path []string, unit string) floa
 	for i, step := range path {
 		node := findNodeByPattern(currentNodes, step)
 		if node == nil {
-			return 0
+			return 0, false
 		}
 
 		// If this is the last step, extract the value
@@ -111,25 +117,29 @@ func extractMetricByPath(computer HardwareNode, path []string, unit string) floa
 		currentNodes = node.Children
 	}
 
-	return 0
+	return 0, false
 }
 
-// extractMetrics parses the hardware tree using config and extracts all configured metrics
+// extractMetrics parses the hardware tree using config and extracts all
+// configured metrics. Callers must ensure data.Children is non-empty.
+// A metric that can't be resolved is stored as nil (JSON null) and logged,
+// so the frontend can show "N/A" instead of a misleading 0.
 func extractMetrics(data HardwareData, config *Config) map[string]interface{} {
 	result := make(map[string]interface{})
 	result["timestamp"] = time.Now().Unix()
-
-	if len(data.Children) == 0 {
-		return result
-	}
 
 	computer := data.Children[0]
 	result["pc_name"] = computer.Text
 
 	// Extract each configured metric
 	for _, metric := range config.Metrics {
-		value := extractMetricByPath(computer, metric.Path, metric.Unit)
-		result[metric.Name] = value
+		value, ok := extractMetricByPath(computer, metric.Path, metric.Unit)
+		if !ok {
+			log.Printf("WARNING: metric %q not found (path %v) — emitting null", metric.Name, metric.Path)
+			result[metric.Name] = nil
+		} else {
+			result[metric.Name] = value
+		}
 	}
 
 	return result
@@ -196,6 +206,18 @@ func main() {
 				break
 			}
 
+			// Reject non-200 responses (e.g. a 404/500 error page) instead of
+			// letting the error body flow into the JSON parser.
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				log.Printf("Unexpected HTTP status %d (attempt %d/%d)", resp.StatusCode, attempt, maxRetries)
+				if attempt < maxRetries {
+					time.Sleep(retryInterval)
+					continue
+				}
+				break
+			}
+
 			// Read response
 			body, err := io.ReadAll(resp.Body)
 			resp.Body.Close()
@@ -224,6 +246,14 @@ func main() {
 		}
 
 		if success {
+			// Guard against a 200-OK-but-empty tree (e.g. monitor returned {} or
+			// null): don't clobber good data in Redis with a metrics-less payload.
+			if len(rawData.Children) == 0 {
+				log.Printf("Hardware data has no children (empty tree) — skipping Redis write")
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
 			// Extract metrics using config
 			metrics := extractMetrics(rawData, config)
 
@@ -240,17 +270,20 @@ func main() {
 			if err != nil {
 				log.Printf("Redis SET failed: %v", err)
 			} else {
-				// Display metrics based on config
-				cpuTctl := metrics["cpu_temp_tctl"].(float64)
-				cpuCCD1 := metrics["cpu_temp_ccd1"].(float64)
-				cpuPower := metrics["cpu_power"].(float64)
-				gpuTemp := metrics["gpu_temp"].(float64)
-				gpuPower := metrics["gpu_power"].(float64)
-
-				fmt.Printf("Metrics stored ✓ [CPU Tctl: %.1f°C | CCD1: %.1f°C | %.1fW | GPU: %.1f°C/%.1fW] - %s\n",
-					cpuTctl, cpuCCD1, cpuPower,
-					gpuTemp, gpuPower,
-					time.Now().Format("15:04:05"))
+				// Build the summary line from the config so it never drifts from
+				// metrics-config.json and can't panic on a missing/null metric.
+				var sb strings.Builder
+				for _, m := range config.Metrics {
+					if sb.Len() > 0 {
+						sb.WriteString(" | ")
+					}
+					if v, ok := metrics[m.Name].(float64); ok {
+						fmt.Fprintf(&sb, "%s: %.1f%s", m.Name, v, m.Unit)
+					} else {
+						fmt.Fprintf(&sb, "%s: N/A", m.Name)
+					}
+				}
+				log.Printf("Metrics stored ✓ [%s]", sb.String())
 			}
 		} else {
 			log.Printf("Failed to fetch hardware data after %d attempts, waiting before next cycle...", maxRetries)

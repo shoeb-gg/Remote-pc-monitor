@@ -10,44 +10,52 @@
 	let refreshIntervalSeconds = $state(30); // Default 30 seconds
 	let isRefreshSettingsOpen = $state(false);
 	let isAutoRefreshActive = $state(true);
+	// Bumped whenever the cycle restarts; an in-flight loop checks this before
+	// scheduling so a stale chain can't keep polling alongside a new one.
+	let activeGeneration = 0;
 
 	// Load refresh interval from localStorage on mount
 	onMount(async () => {
 		const saved = localStorage.getItem('refreshInterval');
 		if (saved) {
-			refreshIntervalSeconds = parseInt(saved, 10);
+			const parsed = parseInt(saved, 10);
+			// Ignore a corrupt value; NaN would silently disable auto-refresh.
+			if (Number.isFinite(parsed) && parsed >= 0) {
+				refreshIntervalSeconds = parsed;
+			}
 		}
 
 		// Initial fetch and start the refresh cycle
-		await refreshAndScheduleNext();
+		refreshNow();
 	});
 
 	onDestroy(() => {
 		isAutoRefreshActive = false;
+		activeGeneration++; // invalidate any in-flight loop
 		if (refreshTimeout) {
 			clearTimeout(refreshTimeout);
 		}
 	});
 
-	const refreshAndScheduleNext = async () => {
-		// Fetch data
+	// Fetch once, then schedule the next tick only if this is still the active
+	// generation AND auto-refresh is enabled (interval > 0).
+	const runRefreshLoop = async (generation: number) => {
 		await hardwareStore.refresh();
 
-		// Schedule next refresh only if auto-refresh is still active and interval > 0
-		if (isAutoRefreshActive && refreshIntervalSeconds > 0) {
-			refreshTimeout = setTimeout(refreshAndScheduleNext, refreshIntervalSeconds * 1000);
+		if (generation !== activeGeneration || !isAutoRefreshActive) return;
+		if (refreshIntervalSeconds > 0) {
+			refreshTimeout = setTimeout(() => runRefreshLoop(generation), refreshIntervalSeconds * 1000);
 		}
 	};
 
-	const restartRefreshCycle = () => {
-		// Clear existing timeout
+	// Always fetches immediately. Used for mount, the manual button, and after
+	// saving settings — so manual refresh works even when auto-refresh is off.
+	const refreshNow = () => {
+		activeGeneration++;
 		if (refreshTimeout) {
 			clearTimeout(refreshTimeout);
 		}
-		// Start new cycle only if interval > 0
-		if (refreshIntervalSeconds > 0) {
-			refreshAndScheduleNext();
-		}
+		runRefreshLoop(activeGeneration);
 	};
 
 	const openRefreshSettings = () => {
@@ -61,7 +69,7 @@
 	const saveRefreshInterval = (interval: number) => {
 		refreshIntervalSeconds = interval;
 		localStorage.setItem('refreshInterval', interval.toString());
-		restartRefreshCycle();
+		refreshNow();
 	};
 </script>
 
@@ -78,7 +86,7 @@
 				<h1 class="text-4xl font-bold text-white">PC Hardware Monitor</h1>
 				<div class="flex items-center space-x-2">
 					<button
-						onclick={restartRefreshCycle}
+						onclick={refreshNow}
 						class="p-3 hover:bg-white/10 rounded-lg transition-colors duration-200"
 						aria-label="Refresh Now"
 						disabled={hardwareStore.loading}

@@ -4,13 +4,17 @@
 
 	interface Props {
 		title: string;
-		temperature: number | undefined;
+		temperature: number | null | undefined;
 		type: 'cpu' | 'gpu';
 		loading?: boolean;
 		error?: boolean;
 	}
 
 	let { title, temperature, type, loading = false, error = false }: Props = $props();
+
+	// null = backend couldn't find this sensor; undefined = no data at all.
+	const hasReading = $derived(typeof temperature === 'number');
+	const sensorMissing = $derived(temperature === null);
 
 	const gradientClass = type === 'cpu'
 		? 'from-blue-500 to-cyan-600'
@@ -35,8 +39,8 @@
 		}
 	});
 
-	const getTemperatureColor = (temp: number | undefined) => {
-		if (!temp) return 'text-gray-400';
+	const getTemperatureColor = (temp: number | null | undefined) => {
+		if (typeof temp !== 'number') return 'text-gray-400';
 		if (temp < 50) return 'text-green-400';
 		if (temp < 70) return 'text-yellow-400';
 		if (temp < 85) return 'text-orange-400';
@@ -45,7 +49,7 @@
 
 	const getStatusDotColor = () => {
 		if (loading) return 'bg-yellow-400';
-		if (error || temperature === undefined) return 'bg-red-400';
+		if (error || temperature === undefined || sensorMissing) return 'bg-red-400';
 		return 'bg-green-400';
 	};
 
@@ -64,7 +68,7 @@
 	};
 
 	const getProgressPercentage = () => {
-		if (temperature === undefined) return 0;
+		if (typeof temperature !== 'number') return 0;
 		const range = maxTemp - minTemp;
 		const value = temperature - minTemp;
 		return Math.min(Math.max((value / range) * 100, 0), 100);
@@ -89,20 +93,27 @@
 			</div>
 		</div>
 
-		<div class="flex items-baseline space-x-2">
-			<span class="text-5xl font-bold {getTemperatureColor(temperature)} transition-colors duration-300">
-				{temperature !== undefined ? temperature.toFixed(1) : '--'}
-			</span>
-			<span class="text-2xl text-white/60">°C</span>
-		</div>
-
-		{#if temperature !== undefined}
-			<div class="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
-				<div
-					class="h-full bg-gradient-to-r from-white/50 to-white/80 transition-all duration-500 ease-out"
-					style="width: {getProgressPercentage()}%"
-				></div>
+		{#if sensorMissing}
+			<div class="flex items-baseline space-x-2">
+				<span class="text-4xl font-bold text-gray-400">N/A</span>
 			</div>
+			<p class="mt-2 text-sm text-red-400/90">Sensor not found</p>
+		{:else}
+			<div class="flex items-baseline space-x-2">
+				<span class="text-5xl font-bold {getTemperatureColor(temperature)} transition-colors duration-300">
+					{hasReading ? (temperature as number).toFixed(1) : '--'}
+				</span>
+				<span class="text-2xl text-white/60">°C</span>
+			</div>
+
+			{#if hasReading}
+				<div class="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+					<div
+						class="h-full bg-gradient-to-r from-white/50 to-white/80 transition-all duration-500 ease-out"
+						style="width: {getProgressPercentage()}%"
+					></div>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
